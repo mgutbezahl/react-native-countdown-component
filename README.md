@@ -2,7 +2,9 @@
 React Native CountDown
 
 ## Installation
-Run `npm install react-native-countdown-component --save` OR `yarn add react-native-countdown-component --save`
+Run `npm install react-native-countdown-component --save` OR `yarn add react-native-countdown-component`
+> This package uses react-native-background-timer. Please install react-native-background-timer.
+Run `npm install react-native-background-timer --save` OR `yarn add react-native-background-timer`
 
 ## Props
 | Name | Description | Type | Default Value |
