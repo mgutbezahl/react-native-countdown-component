@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import _ from "lodash";
 import { sprintf } from "sprintf-js";
-import BackgroundTimer from 'react-native-background-timer';
+import BackgroundTimer from "react-native-background-timer";
 
 const DEFAULT_DIGIT_STYLE = { backgroundColor: "#FAB913" };
 const DEFAULT_DIGIT_TXT_STYLE = { color: "#000" };
@@ -26,15 +26,13 @@ const DEFAULT_TIME_LABELS = {
 
 function CountDown(props) {
   const getDuration = () => {
-    return Math.max(parseInt((props.until - Date.now())/1000, 10) , 0);
+    return Math.max(parseInt((props.until - Date.now()) / 1000, 10), 0);
   };
   const [duration, setDuration] = React.useState(getDuration());
 
   React.useEffect(() => {
     const handleAppStateChange = (currentAppState) => {
-      if (
-        currentAppState === "active" && props.running
-      ) {
+      if (currentAppState === "active" && props.running) {
         BackgroundTimer.runBackgroundTimer(updateTimer, 1000);
       }
       if (currentAppState === "background") {
@@ -47,7 +45,7 @@ function CountDown(props) {
     return () => {
       BackgroundTimer.stopBackgroundTimer();
       AppState.removeEventListener("change", handleAppStateChange);
-    }
+    };
   }, []);
 
   React.useEffect(() => {
@@ -61,6 +59,7 @@ function CountDown(props) {
     const duration = getDuration();
     if (duration === 0) {
       if (props.onFinish) {
+        BackgroundTimer.stopBackgroundTimer();
         props.onFinish();
       }
       setDuration(0);
@@ -175,9 +174,7 @@ function CountDown(props) {
       </Component>
     );
   };
-  return (
-    <View style={props.style}>{renderCountDown()}</View>
-  )
+  return <View style={props.style}>{renderCountDown()}</View>;
 }
 
 CountDown.defaultProps = {
@@ -195,10 +192,10 @@ CountDown.defaultProps = {
 
 CountDown.propTypes = {
   id: PropTypes.string,
-  digitStyle: PropTypes.object,
-  digitTxtStyle: PropTypes.object,
-  timeLabelStyle: PropTypes.object,
-  separatorStyle: PropTypes.object,
+  digitStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  digitTxtStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  timeLabelStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  separatorStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   timeToShow: PropTypes.array,
   showSeparator: PropTypes.bool,
   size: PropTypes.number,
