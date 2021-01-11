@@ -52,6 +52,12 @@ function CountDown(props) {
     setDuration(getDuration());
   }, [props.id, props.until]);
 
+  React.useEffect(() => {
+    if(duration === 0) {
+      BackgroundTimer.stopBackgroundTimer();
+    }
+  }, [duration]);
+
   const updateTimer = () => {
     if (!props.running) {
       return;
@@ -59,7 +65,6 @@ function CountDown(props) {
     const duration = getDuration();
     if (duration === 0) {
       if (props.onFinish) {
-        BackgroundTimer.stopBackgroundTimer();
         props.onFinish();
       }
       setDuration(0);
