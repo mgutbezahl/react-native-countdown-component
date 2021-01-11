@@ -1,10 +1,10 @@
 {
-  "name": "react-native-countdown-component",
+  "name": "greact-native-countdown-component",
   "version": "2.7.1",
   "description": "React Native CountDown Component",
   "repository": {
     "type": "git",
-    "url": "https://github.com/talalmajali/react-native-countdown-component.git"
+    "url": "https://github.com/groovetch/react-native-countdown-component"
   },
   "keywords": [
     "react-native",
@@ -17,14 +17,6 @@
     "counter",
     "countdown"
   ],
-  "author": {
-    "name": "Talal Majali",
-    "email": "t.majali93@gmail.com"
-  },
-  "homepage": "https://github.com/talalmajali/react-native-countdown-component",
-  "bugs": {
-    "url": "https://github.com/talalmajali/react-native-countdown-component/issues"
-  },
   "dependencies": {
     "lodash": "^4.17.13",
     "sprintf-js": "^1.1.1",
