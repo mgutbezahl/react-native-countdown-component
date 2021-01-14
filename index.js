@@ -46,7 +46,7 @@ function CountDown(props) {
       BackgroundTimer.stopBackgroundTimer();
       AppState.removeEventListener("change", handleAppStateChange);
     };
-  }, []);
+  }, [props.id, props.until]);
 
   React.useEffect(() => {
     setDuration(getDuration());
@@ -62,17 +62,17 @@ function CountDown(props) {
     if (!props.running) {
       return;
     }
-    const duration = getDuration();
-    if (duration === 0) {
+    const currentDuration = getDuration();
+    if (currentDuration === 0) {
       if (props.onFinish) {
         props.onFinish();
       }
       setDuration(0);
     } else {
-      setDuration(duration);
+      setDuration(currentDuration);
     }
     if (props.onChange) {
-      props.onChange(duration);
+      props.onChange(currentDuration);
     }
   };
 
