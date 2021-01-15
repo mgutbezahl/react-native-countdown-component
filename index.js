@@ -52,7 +52,7 @@ function CountDown(props) {
           updateTimer();
         }, 1000);
       }
-      if (currentAppState === "background") {
+      if (currentAppState === "background" || currentAppState === "inactive") {
         BackgroundTimer.clearInterval(intervalId.current);
       }
     };
