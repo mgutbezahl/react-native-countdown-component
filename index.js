@@ -12,6 +12,8 @@ import _ from "lodash";
 import { sprintf } from "sprintf-js";
 import BackgroundTimer from "react-native-background-timer";
 
+BackgroundTimer.start();
+
 const DEFAULT_DIGIT_STYLE = { backgroundColor: "#FAB913" };
 const DEFAULT_DIGIT_TXT_STYLE = { color: "#000" };
 const DEFAULT_TIME_LABEL_STYLE = { color: "#000" };
@@ -29,32 +31,48 @@ function CountDown(props) {
     return Math.max(parseInt((props.until - Date.now()) / 1000, 10), 0);
   };
   const [duration, setDuration] = React.useState(getDuration());
+  const durationRef = React.useRef(duration);
+  const intervalId = React.useRef('');
+
+  const updateCurrentDuration = () => {
+    const currentDuration = getDuration();
+    setDuration(currentDuration);
+    durationRef.current = currentDuration;
+  };
 
   React.useEffect(() => {
+    intervalId.current = BackgroundTimer.setInterval(() => {
+      updateTimer();
+    }, 1000);
+
     const handleAppStateChange = (currentAppState) => {
       if (currentAppState === "active" && props.running) {
-        BackgroundTimer.runBackgroundTimer(updateTimer, 1000);
+        updateCurrentDuration();
+        intervalId.current = BackgroundTimer.setInterval(() => {
+          updateTimer();
+        }, 1000);
       }
       if (currentAppState === "background") {
-        BackgroundTimer.stopBackgroundTimer();
+        BackgroundTimer.clearInterval(intervalId.current);
       }
     };
 
-    BackgroundTimer.runBackgroundTimer(updateTimer, 1000);
     AppState.addEventListener("change", handleAppStateChange);
     return () => {
-      BackgroundTimer.stopBackgroundTimer();
+      BackgroundTimer.clearInterval(intervalId);
       AppState.removeEventListener("change", handleAppStateChange);
     };
   }, [props.id, props.until]);
 
   React.useEffect(() => {
-    setDuration(getDuration());
+    updateCurrentDuration();
   }, [props.id, props.until]);
 
   React.useEffect(() => {
-    if(duration === 0) {
-      BackgroundTimer.stopBackgroundTimer();
+    if(duration <= 0) {
+      BackgroundTimer.clearInterval(intervalId.current);
+      durationRef.current = 0;
+      setDuration(0);
     }
   }, [duration]);
 
@@ -62,7 +80,8 @@ function CountDown(props) {
     if (!props.running) {
       return;
     }
-    const currentDuration = getDuration();
+    durationRef.current -= 1;
+    const currentDuration = durationRef.current;
     if (currentDuration === 0) {
       if (props.onFinish) {
         props.onFinish();
