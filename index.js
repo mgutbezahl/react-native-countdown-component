@@ -1,124 +1,157 @@
-import React from "react";
-import PropTypes from "prop-types";
-
+import React, { useCallback, useState, useRef } from 'react';
+import PropTypes from 'prop-types';
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
   AppState,
-} from "react-native";
-import _ from "lodash";
-import { sprintf } from "sprintf-js";
-import BackgroundTimer from "react-native-background-timer";
+} from 'react-native';
+import _ from 'lodash';
+import moment from 'moment';
+import BackgroundTimer from 'react-native-background-timer';
 
-BackgroundTimer.start();
-
-const DEFAULT_DIGIT_STYLE = { backgroundColor: "#FAB913" };
-const DEFAULT_DIGIT_TXT_STYLE = { color: "#000" };
-const DEFAULT_TIME_LABEL_STYLE = { color: "#000" };
-const DEFAULT_SEPARATOR_STYLE = { color: "#000" };
-const DEFAULT_TIME_TO_SHOW = ["D", "H", "M", "S"];
+const DEFAULT_DIGIT_STYLE = { backgroundColor: '#FAB913' };
+const DEFAULT_DIGIT_TXT_STYLE = { color: '#000' };
+const DEFAULT_TIME_LABEL_STYLE = { color: '#000' };
+const DEFAULT_SEPARATOR_STYLE = { color: '#000' };
+const DEFAULT_TIME_TO_SHOW = ['D', 'H', 'M', 'S'];
 const DEFAULT_TIME_LABELS = {
-  d: "Days",
-  h: "Hours",
-  m: "Minutes",
-  s: "Seconds",
+  d: 'Days',
+  h: 'Hours',
+  m: 'Minutes',
+  s: 'Seconds',
+};
+
+const INITIALIZE_DIFF = {
+  days: 0,
+  hours: 0,
+  minutes: 0,
+  seconds: 0,
+  timestamp: 0,
 };
 
 function CountDown(props) {
-  const getDuration = () => {
-    return Math.max(parseInt((props.until - Date.now()) / 1000, 10), 0);
-  };
-  const [duration, setDuration] = React.useState(getDuration());
-  const durationRef = React.useRef(duration);
-  const intervalId = React.useRef('');
+  const { until, useBackgroundTimer, running, onFinish, onChange } = props;
+  const intervalId = useRef(null);
+  const [duration, setDuration] = useState(INITIALIZE_DIFF);
 
-  const updateCurrentDuration = () => {
-    const currentDuration = getDuration();
-    setDuration(currentDuration);
-    durationRef.current = currentDuration;
-  };
+  const getDuration = useCallback(() => {
+    const untilMoment = moment(until);
+    const currentMoment = moment();
+    let diff = INITIALIZE_DIFF;
+    if (untilMoment.diff(currentMoment, 'timestamp') > 0) {
+      const seconds = untilMoment.diff(currentMoment, 'seconds');
+      diff = {
+        days: untilMoment.diff(currentMoment, 'days'),
+        hours: parseInt(seconds / 3600, 10) % 24,
+        minutes: parseInt(seconds / 60, 10) % 60,
+        seconds: seconds % 60,
+        timestamp: untilMoment.diff(currentMoment, 'timestamp'),
+      };
+    }
+    return diff;
+  }, [until]);
 
-  React.useEffect(() => {
-    intervalId.current = BackgroundTimer.setInterval(() => {
-      updateTimer();
-    }, 1000);
-
-    const handleAppStateChange = (currentAppState) => {
-      if (currentAppState === "active" && props.running) {
-        updateCurrentDuration();
+  const setTick = useCallback(
+    callback => {
+      clearTick();
+      if (useBackgroundTimer) {
         intervalId.current = BackgroundTimer.setInterval(() => {
-          updateTimer();
+          callback();
+        }, 1000);
+      } else {
+        intervalId.current = setInterval(() => {
+          callback();
         }, 1000);
       }
-      if (currentAppState === "background" || currentAppState === "inactive") {
+    },
+    [clearTick, useBackgroundTimer],
+  );
+
+  const clearTick = useCallback(() => {
+    if (intervalId.current) {
+      if (useBackgroundTimer) {
         BackgroundTimer.clearInterval(intervalId.current);
+      } else {
+        clearInterval(intervalId.current);
       }
-    };
-
-    AppState.addEventListener("change", handleAppStateChange);
-    return () => {
-      BackgroundTimer.clearInterval(intervalId);
-      AppState.removeEventListener("change", handleAppStateChange);
-    };
-  }, [props.id, props.until]);
-
-  React.useEffect(() => {
-    updateCurrentDuration();
-  }, [props.id, props.until]);
-
-  React.useEffect(() => {
-    if(duration <= 0) {
-      BackgroundTimer.clearInterval(intervalId.current);
-      durationRef.current = 0;
-      setDuration(0);
+      intervalId.current = null;
     }
-  }, [duration]);
+  }, [useBackgroundTimer]);
 
-  const updateTimer = () => {
-    if (!props.running) {
+  const updateTimer = useCallback(() => {
+    if (!until && !running) {
       return;
     }
-    durationRef.current -= 1;
-    const currentDuration = durationRef.current;
-    if (currentDuration === 0) {
-      if (props.onFinish) {
-        props.onFinish();
+    const currentDuration = getDuration();
+    setDuration(currentDuration);
+    if (_.isFunction(onChange)) {
+      onChange(currentDuration);
+    }
+    if (currentDuration.timestamp <= 0 && _.isFunction(onFinish)) {
+      onFinish();
+      clearTick();
+    }
+  }, [until, running, getDuration, clearTick, onChange, onFinish]);
+
+  React.useEffect(() => {
+    const handleAppStateChange = currentAppState => {
+      if (currentAppState === 'active' && running) {
+        const currentDuration = getDuration();
+        setDuration(currentDuration);
+        setTick(updateTimer);
       }
-      setDuration(0);
-    } else {
-      setDuration(currentDuration);
-    }
-    if (props.onChange) {
-      props.onChange(currentDuration);
-    }
-  };
+      if (currentAppState === 'background') {
+        clearTick();
+      }
+    };
+
+    setTick(updateTimer);
+    AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      clearTick();
+      AppState.removeEventListener('change', handleAppStateChange);
+    };
+  }, [
+    until,
+    running,
+    useBackgroundTimer,
+    setTick,
+    clearTick,
+    updateTimer,
+    getDuration,
+  ]);
+
+  React.useEffect(() => {
+    const currentDuration = getDuration();
+    setDuration(currentDuration);
+  }, [until, getDuration]);
 
   const renderSeparator = () => {
     const { separatorStyle, size } = props;
     return (
-      <View style={{ justifyContent: "center", alignItems: "center" }}>
+      // eslint-disable-next-line react-native/no-inline-styles
+      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
         <Text
           style={[
             styles.separatorTxt,
             { fontSize: size * 1.2 },
             separatorStyle,
-          ]}
-        >
-          {":"}
+          ]}>
+          {':'}
         </Text>
       </View>
     );
   };
 
-  const renderLabel = (label) => {
+  const renderLabel = label => {
     const { timeLabelStyle, size } = props;
     if (label) {
       return (
         <Text
-          style={[styles.timeTxt, { fontSize: size / 1.8 }, timeLabelStyle]}
-        >
+          style={[styles.timeTxt, { fontSize: size / 1.8 }, timeLabelStyle]}>
           {label}
         </Text>
       );
@@ -133,8 +166,7 @@ function CountDown(props) {
           styles.digitCont,
           { width: size * 2.3, height: size * 2.6 },
           digitStyle,
-        ]}
-      >
+        ]}>
         <Text style={[styles.digitTxt, { fontSize: size }, digitTxtStyle]}>
           {d}
         </Text>
@@ -151,53 +183,43 @@ function CountDown(props) {
     );
   };
 
-  const getTimeLeft = () => {
-    return {
-      seconds: duration % 60,
-      minutes: parseInt(duration / 60, 10) % 60,
-      hours: parseInt(duration / (60 * 60), 10) % 24,
-      days: parseInt(duration / (60 * 60 * 24), 10),
-    };
-  };
-
   const renderCountDown = () => {
     const { timeToShow, timeLabels, showSeparator } = props;
-    const { days, hours, minutes, seconds } = getTimeLeft();
-    const newTime = sprintf(
-      "%02d:%02d:%02d:%02d",
-      days,
-      hours,
-      minutes,
-      seconds
-    ).split(":");
+    const newTime = [
+      ('0' + duration.days).slice(-2),
+      ('0' + duration.hours).slice(-2),
+      ('0' + duration.minutes).slice(-2),
+      ('0' + duration.seconds).slice(-2),
+    ];
     const Component = props.onPress ? TouchableOpacity : View;
 
     return (
       <Component style={styles.timeCont} onPress={props.onPress}>
-        {timeToShow.includes("D")
+        {timeToShow.includes('D')
           ? renderDoubleDigits(timeLabels.d, newTime[0])
           : null}
-        {showSeparator && timeToShow.includes("D") && timeToShow.includes("H")
+        {showSeparator && timeToShow.includes('D') && timeToShow.includes('H')
           ? renderSeparator()
           : null}
-        {timeToShow.includes("H")
+        {timeToShow.includes('H')
           ? renderDoubleDigits(timeLabels.h, newTime[1])
           : null}
-        {showSeparator && timeToShow.includes("H") && timeToShow.includes("M")
+        {showSeparator && timeToShow.includes('H') && timeToShow.includes('M')
           ? renderSeparator()
           : null}
-        {timeToShow.includes("M")
+        {timeToShow.includes('M')
           ? renderDoubleDigits(timeLabels.m, newTime[2])
           : null}
-        {showSeparator && timeToShow.includes("M") && timeToShow.includes("S")
+        {showSeparator && timeToShow.includes('M') && timeToShow.includes('S')
           ? renderSeparator()
           : null}
-        {timeToShow.includes("S")
+        {timeToShow.includes('S')
           ? renderDoubleDigits(timeLabels.s, newTime[3])
           : null}
       </Component>
     );
   };
+
   return <View style={props.style}>{renderCountDown()}</View>;
 }
 
@@ -212,10 +234,12 @@ CountDown.defaultProps = {
   until: 0,
   size: 15,
   running: true,
+  useBackgroundTimer: false,
 };
 
 CountDown.propTypes = {
   id: PropTypes.string,
+  useBackgroundTimer: PropTypes.bool,
   digitStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   digitTxtStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   timeLabelStyle: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
@@ -223,7 +247,7 @@ CountDown.propTypes = {
   timeToShow: PropTypes.array,
   showSeparator: PropTypes.bool,
   size: PropTypes.number,
-  until: PropTypes.number,
+  until: PropTypes.instanceOf(Date),
   onChange: PropTypes.func,
   onPress: PropTypes.func,
   onFinish: PropTypes.func,
@@ -231,37 +255,37 @@ CountDown.propTypes = {
 
 const styles = StyleSheet.create({
   timeCont: {
-    flexDirection: "row",
-    justifyContent: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   timeTxt: {
-    color: "white",
+    color: 'white',
     marginVertical: 2,
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
   },
   timeInnerCont: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   digitCont: {
     borderRadius: 5,
     marginHorizontal: 2,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   doubleDigitCont: {
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   digitTxt: {
-    color: "white",
-    fontWeight: "bold",
-    fontVariant: ["tabular-nums"],
+    color: 'white',
+    fontWeight: 'bold',
+    fontVariant: ['tabular-nums'],
   },
   separatorTxt: {
-    backgroundColor: "transparent",
-    fontWeight: "bold",
+    backgroundColor: 'transparent',
+    fontWeight: 'bold',
   },
 });
 
