@@ -93,7 +93,7 @@ function CountDown(props) {
       onFinish();
       clearTick();
     }
-  }, [until, running, getDuration, clearTick, onChange, onFinish]);
+  }, [until, running, getDuration, clearTick]);
 
   React.useEffect(() => {
     const handleAppStateChange = currentAppState => {
@@ -231,7 +231,7 @@ CountDown.defaultProps = {
   separatorStyle: DEFAULT_SEPARATOR_STYLE,
   timeToShow: DEFAULT_TIME_TO_SHOW,
   showSeparator: false,
-  until: 0,
+  until: null,
   size: 15,
   running: true,
   useBackgroundTimer: false,
