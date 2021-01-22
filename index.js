@@ -28,7 +28,7 @@ const INITIALIZE_DIFF = {
   hours: 0,
   minutes: 0,
   seconds: 0,
-  timestamp: 0,
+  totalSeconds: 0,
 };
 
 function CountDown(props) {
@@ -54,7 +54,7 @@ function CountDown(props) {
         hours: parseInt(seconds / 3600, 10) % 24,
         minutes: parseInt(seconds / 60, 10) % 60,
         seconds: seconds % 60,
-        timestamp: untilMoment.diff(currentMoment, 'timestamp'),
+        totalSeconds: seconds,
       };
     }
     setDuration(diff);
@@ -97,7 +97,7 @@ function CountDown(props) {
     if (_.isFunction(onChange)) {
       onChange(currentDuration);
     }
-    if (currentDuration.timestamp <= 0 && _.isFunction(onFinish)) {
+    if (currentDuration.totalSeconds <= 0 && _.isFunction(onFinish)) {
       onFinish();
       clearTick();
     }
@@ -125,15 +125,7 @@ function CountDown(props) {
       clearTick();
       AppState.removeEventListener('change', handleAppStateChange);
     };
-  }, [
-    until,
-    running,
-    useBackgroundTimer,
-    setTick,
-    clearTick,
-    updateTimer,
-    updateDuration,
-  ]);
+  }, [until, running, useBackgroundTimer]);
 
   React.useEffect(() => {
     if (!until) {
@@ -141,7 +133,7 @@ function CountDown(props) {
     }
     initInterval();
     updateDuration();
-  }, [until, updateDuration]);
+  }, [until]);
 
   const renderSeparator = () => {
     const { separatorStyle, size } = props;
