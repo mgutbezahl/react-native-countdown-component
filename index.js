@@ -38,7 +38,7 @@ function CountDown(props) {
 
   const getDuration = useCallback(() => {
     const untilMoment = moment(until);
-    const currentMoment = moment(Date().toString());
+    const currentMoment = moment(moment().format());
     let diff = INITIALIZE_DIFF;
     if (untilMoment.diff(currentMoment, 'timestamp') > 0) {
       const seconds = untilMoment.diff(currentMoment, 'seconds');
