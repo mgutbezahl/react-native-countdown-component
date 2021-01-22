@@ -1,6 +1,6 @@
 {
   "name": "greact-native-countdown-component",
-  "version": "2.7.9",
+  "version": "2.8.0",
   "description": "React Native CountDown Component",
   "repository": {
     "type": "git",
@@ -18,8 +18,8 @@
     "countdown"
   ],
   "dependencies": {
-    "lodash": "^4.17.13",
     "moment": "^2.24.0",
-    "prop-types": "^15.5.8"
+    "prop-types": "^15.5.8",
+    "react-native-background-timer": "^2.4.1"
   }
 }

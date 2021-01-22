@@ -1,15 +1,8 @@
 import React, { useCallback, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  AppState,
-} from 'react-native';
-import _ from 'lodash';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import moment from 'moment';
-import BackgroundTimer from 'react-native-background-timer';
+import BackgroundTimeout from './BackgroundTimeout';
 
 const DEFAULT_DIGIT_STYLE = { backgroundColor: '#FAB913' };
 const DEFAULT_DIGIT_TXT_STYLE = { color: '#000' };
@@ -33,24 +26,16 @@ const INITIALIZE_DIFF = {
 
 function CountDown(props) {
   const { until, useBackgroundTimer, running, onFinish, onChange } = props;
-  const intervalId = useRef(null);
+  const untilMoment = useRef(null);
   const secondInterval = useRef(0);
   const [duration, setDuration] = useState(INITIALIZE_DIFF);
 
-  const initInterval = useCallback(() => {
-    const untilMoment = moment(until);
-    const currentMoment = moment();
-    secondInterval.current = untilMoment.diff(currentMoment, 'seconds');
-  }, [until]);
-
-  const updateDuration = useCallback(() => {
+  const updateDuration = useCallback(seconds => {
     let diff = INITIALIZE_DIFF;
-    const seconds = secondInterval.current;
     if (seconds > 0) {
-      const untilMoment = moment(until);
       const currentMoment = moment(moment().format());
       diff = {
-        days: untilMoment.diff(currentMoment, 'days'),
+        days: untilMoment.current.diff(currentMoment, 'days'),
         hours: parseInt(seconds / 3600, 10) % 24,
         minutes: parseInt(seconds / 60, 10) % 60,
         seconds: seconds % 60,
@@ -58,81 +43,16 @@ function CountDown(props) {
       };
     }
     setDuration(diff);
-    return diff;
-  }, [until])
-
-  const setTick = useCallback(
-    callback => {
-      clearTick();
-      if (useBackgroundTimer) {
-        intervalId.current = BackgroundTimer.setInterval(() => {
-          callback();
-        }, 1000);
-      } else {
-        intervalId.current = setInterval(() => {
-          callback();
-        }, 1000);
-      }
-    },
-    [clearTick, useBackgroundTimer],
-  );
-
-  const clearTick = useCallback(() => {
-    if (intervalId.current) {
-      if (useBackgroundTimer) {
-        BackgroundTimer.clearInterval(intervalId.current);
-      } else {
-        clearInterval(intervalId.current);
-      }
-      intervalId.current = null;
-    }
-  }, [useBackgroundTimer]);
-
-  const updateTimer = useCallback(() => {
-    if (!until && !running) {
-      return;
-    }
-    secondInterval.current = Math.max(0, secondInterval.current - 1);
-    const currentDuration = updateDuration();
-    if (_.isFunction(onChange)) {
-      onChange(currentDuration);
-    }
-    if (currentDuration.totalSeconds <= 0 && _.isFunction(onFinish)) {
-      onFinish();
-      clearTick();
-    }
-  }, [until, running, updateDuration, clearTick]);
-
-  React.useEffect(() => {
-    if (!until && !running) {
-      return;
-    }
-    const handleAppStateChange = currentAppState => {
-      initInterval();
-      updateDuration();
-      if (currentAppState === 'active' && running) {
-        setTick(updateTimer);
-      }
-      if (currentAppState === 'background') {
-        clearTick();
-      }
-    };
-
-    setTick(updateTimer);
-    AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      clearTick();
-      AppState.removeEventListener('change', handleAppStateChange);
-    };
-  }, [until, running, useBackgroundTimer]);
+  }, []);
 
   React.useEffect(() => {
     if (!until) {
       return;
     }
-    initInterval();
-    updateDuration();
+    untilMoment.current = moment(until);
+    const currentMoment = moment(moment().format());
+    secondInterval.current = untilMoment.current.diff(currentMoment, 'seconds');
+    updateDuration(secondInterval.current);
   }, [until]);
 
   const renderSeparator = () => {
@@ -198,7 +118,6 @@ function CountDown(props) {
       ('0' + duration.seconds).slice(-2),
     ];
     const Component = props.onPress ? TouchableOpacity : View;
-
     return (
       <Component style={styles.timeCont} onPress={props.onPress}>
         {timeToShow.includes('D')
@@ -226,7 +145,24 @@ function CountDown(props) {
     );
   };
 
-  return <View style={props.style}>{renderCountDown()}</View>;
+  return (
+    <View style={props.style}>
+      {running && (
+        <BackgroundTimeout
+          useBackgroundTimer={useBackgroundTimer}
+          seconds={secondInterval.current}
+          onFinish={onFinish}
+          onChange={seconds => {
+            updateDuration(seconds);
+            if (typeof onChange === 'function') {
+              onChange(seconds);
+            }
+          }}
+        />
+      )}
+      {renderCountDown()}
+    </View>
+  );
 }
 
 CountDown.defaultProps = {
@@ -255,8 +191,8 @@ CountDown.propTypes = {
   size: PropTypes.number,
   until: PropTypes.instanceOf(Date),
   onChange: PropTypes.func,
-  onPress: PropTypes.func,
   onFinish: PropTypes.func,
+  onPress: PropTypes.func,
 };
 
 const styles = StyleSheet.create({
