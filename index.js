@@ -38,7 +38,7 @@ function CountDown(props) {
 
   const getDuration = useCallback(() => {
     const untilMoment = moment(until);
-    const currentMoment = moment();
+    const currentMoment = moment(Date().toString());
     let diff = INITIALIZE_DIFF;
     if (untilMoment.diff(currentMoment, 'timestamp') > 0) {
       const seconds = untilMoment.diff(currentMoment, 'seconds');
@@ -96,6 +96,9 @@ function CountDown(props) {
   }, [until, running, getDuration, clearTick]);
 
   React.useEffect(() => {
+    if (!until && !running) {
+      return;
+    }
     const handleAppStateChange = currentAppState => {
       if (currentAppState === 'active' && running) {
         const currentDuration = getDuration();
@@ -125,8 +128,7 @@ function CountDown(props) {
   ]);
 
   React.useEffect(() => {
-    const currentDuration = getDuration();
-    setDuration(currentDuration);
+    setDuration(getDuration());
   }, [until, getDuration]);
 
   const renderSeparator = () => {
