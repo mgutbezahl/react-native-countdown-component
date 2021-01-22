@@ -34,14 +34,21 @@ const INITIALIZE_DIFF = {
 function CountDown(props) {
   const { until, useBackgroundTimer, running, onFinish, onChange } = props;
   const intervalId = useRef(null);
+  const secondInterval = useRef(0);
   const [duration, setDuration] = useState(INITIALIZE_DIFF);
 
-  const getDuration = useCallback(() => {
+  const initInterval = useCallback(() => {
     const untilMoment = moment(until);
-    const currentMoment = moment(moment().format());
+    const currentMoment = moment();
+    secondInterval.current = untilMoment.diff(currentMoment, 'seconds');
+  }, [until]);
+
+  const updateDuration = useCallback(() => {
     let diff = INITIALIZE_DIFF;
-    if (untilMoment.diff(currentMoment, 'timestamp') > 0) {
-      const seconds = untilMoment.diff(currentMoment, 'seconds');
+    const seconds = secondInterval.current;
+    if (seconds > 0) {
+      const untilMoment = moment(until);
+      const currentMoment = moment(moment().format());
       diff = {
         days: untilMoment.diff(currentMoment, 'days'),
         hours: parseInt(seconds / 3600, 10) % 24,
@@ -50,8 +57,9 @@ function CountDown(props) {
         timestamp: untilMoment.diff(currentMoment, 'timestamp'),
       };
     }
+    setDuration(diff);
     return diff;
-  }, [until]);
+  }, [until])
 
   const setTick = useCallback(
     callback => {
@@ -84,8 +92,8 @@ function CountDown(props) {
     if (!until && !running) {
       return;
     }
-    const currentDuration = getDuration();
-    setDuration(currentDuration);
+    secondInterval.current = Math.max(0, secondInterval.current - 1);
+    const currentDuration = updateDuration();
     if (_.isFunction(onChange)) {
       onChange(currentDuration);
     }
@@ -93,16 +101,16 @@ function CountDown(props) {
       onFinish();
       clearTick();
     }
-  }, [until, running, getDuration, clearTick]);
+  }, [until, running, updateDuration, clearTick]);
 
   React.useEffect(() => {
     if (!until && !running) {
       return;
     }
     const handleAppStateChange = currentAppState => {
+      initInterval();
+      updateDuration();
       if (currentAppState === 'active' && running) {
-        const currentDuration = getDuration();
-        setDuration(currentDuration);
         setTick(updateTimer);
       }
       if (currentAppState === 'background') {
@@ -124,12 +132,16 @@ function CountDown(props) {
     setTick,
     clearTick,
     updateTimer,
-    getDuration,
+    updateDuration,
   ]);
 
   React.useEffect(() => {
-    setDuration(getDuration());
-  }, [until, getDuration]);
+    if (!until) {
+      return;
+    }
+    initInterval();
+    updateDuration();
+  }, [until, updateDuration]);
 
   const renderSeparator = () => {
     const { separatorStyle, size } = props;
