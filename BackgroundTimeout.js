@@ -12,7 +12,7 @@ function BackgroundTimeout(props) {
   const secondInterval = useRef(0);
 
   const initInterval = useCallback(() => {
-    if (!seconds || seconds <= 0) {
+    if (!seconds) {
       return;
     }
     const untilMoment = moment(originalTime.current);
@@ -33,7 +33,8 @@ function BackgroundTimeout(props) {
         }, 1000);
       }
     },
-    [clearTick, useBackgroundTimer],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [useBackgroundTimer],
   );
 
   const clearTick = useCallback(() => {
@@ -48,22 +49,34 @@ function BackgroundTimeout(props) {
   }, [useBackgroundTimer]);
 
   const updateTimer = useCallback(() => {
-    if (!seconds || seconds <= 0) {
+    if (!seconds) {
       return;
     }
     secondInterval.current = Math.max(0, secondInterval.current - 1);
-    if (_.isFunction(onChange)) {
-      onChange(secondInterval.current);
-    }
-    if (secondInterval.current <= 0 && _.isFunction(onFinish)) {
-      onFinish();
+    onChangeAsync(secondInterval.current);
+    if (secondInterval.current <= 0) {
+      onFinishAsync();
       clearTick();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seconds, clearTick]);
+  }, [seconds]);
+
+  const onChangeAsync = useCallback(async interval => {
+    if (_.isFunction(onChange)) {
+      onChange(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onFinishAsync = useCallback(async () => {
+    if (_.isFunction(onFinish)) {
+      onFinish();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   React.useEffect(() => {
-    if (!seconds || seconds <= 0) {
+    if (!seconds) {
       return;
     }
     const handleAppStateChange = currentAppState => {
@@ -87,7 +100,7 @@ function BackgroundTimeout(props) {
   }, [seconds, useBackgroundTimer]);
 
   React.useEffect(() => {
-    if (!seconds || seconds <= 0) {
+    if (!seconds) {
       return;
     }
     originalTime.current = moment(moment().format())
