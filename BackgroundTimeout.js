@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { isNil, isFunction } from 'lodash';
 import moment from 'moment';
 import PropTypes from 'prop-types';
 import React, { useCallback, useRef } from 'react';
@@ -12,7 +12,7 @@ function BackgroundTimeout(props) {
   const secondInterval = useRef(0);
 
   const initInterval = useCallback(() => {
-    if (!seconds) {
+    if (isNil(seconds)) {
       return;
     }
     const untilMoment = moment(originalTime.current);
@@ -49,7 +49,7 @@ function BackgroundTimeout(props) {
   }, [useBackgroundTimer]);
 
   const updateTimer = useCallback(() => {
-    if (!seconds) {
+    if (isNil(seconds)) {
       return;
     }
     secondInterval.current = Math.max(0, secondInterval.current - 1);
@@ -62,21 +62,21 @@ function BackgroundTimeout(props) {
   }, [seconds]);
 
   const onChangeAsync = useCallback(async interval => {
-    if (_.isFunction(onChange)) {
+    if (isFunction(onChange)) {
       onChange(interval);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onFinishAsync = useCallback(async () => {
-    if (_.isFunction(onFinish)) {
+    if (isFunction(onFinish)) {
       onFinish();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
-    if (!seconds) {
+    if (isNil(seconds)) {
       return;
     }
     const handleAppStateChange = currentAppState => {
@@ -100,7 +100,7 @@ function BackgroundTimeout(props) {
   }, [seconds, useBackgroundTimer]);
 
   React.useEffect(() => {
-    if (!seconds) {
+    if (isNil(seconds)) {
       return;
     }
     originalTime.current = moment(moment().format())
@@ -120,7 +120,7 @@ BackgroundTimeout.defaultProps = {
 
 BackgroundTimeout.propTypes = {
   useBackgroundTimer: PropTypes.bool,
-  seconds: PropTypes.number,
+  seconds: PropTypes.number.isRequired,
   onChange: PropTypes.func,
   onFinish: PropTypes.func,
 };

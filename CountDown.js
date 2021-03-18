@@ -51,7 +51,7 @@ function CountDown(props) {
     }
     untilMoment.current = moment(until);
     const currentMoment = moment(moment().format());
-    secondInterval.current = untilMoment.current.diff(currentMoment, 'seconds');
+    secondInterval.current = Math.max(0, untilMoment.current.diff(currentMoment, 'seconds'));
     updateDuration(secondInterval.current);
   }, [until]);
 
@@ -189,7 +189,7 @@ CountDown.propTypes = {
   timeToShow: PropTypes.array,
   showSeparator: PropTypes.bool,
   size: PropTypes.number,
-  until: PropTypes.instanceOf(Date),
+  until: PropTypes.instanceOf(Date).isRequired,
   onChange: PropTypes.func,
   onFinish: PropTypes.func,
   onPress: PropTypes.func,
