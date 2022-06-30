@@ -16,7 +16,7 @@ Run `npm install react-native-background-timer --save` OR `yarn add react-native
 | timeLabelStyle | Time Label style | object | {color: ![#FAB913](https://placehold.it/15/000000/000000?text=+) `'#000'`} |
 | separatorStyle | Separator style | object | {color: ![#FAB913](https://placehold.it/15/000000/000000?text=+) `'#000'`} |
 | size | Size of the countdown component | number | 15 |
-| until | Number of seconds to countdown | number | 0 |
+| until | Date or timestamp to countdown | date | now |
 | onFinish | What function should be invoked when the time is 0 | func | null |
 | onChange | What function should be invoked when the timer is changing | func | null |
 | onPress | What function should be invoked when clicking on the timer | func | null |
@@ -37,7 +37,7 @@ import CountDown from 'react-native-countdown-component';
 render() {
     return (
       <CountDown
-        until={10}
+        until={(new Date()).getTime() + (10 * 1000)}
         onFinish={() => alert('finished')}
         onPress={() => alert('hello')}
         size={20}
@@ -57,7 +57,7 @@ import CountDown from 'react-native-countdown-component';
 render() {
     return (
       <CountDown
-        until={60 * 10 + 30}
+        until={(new Date()).getTime() + (60 * 10 + 30) * 1000}
         size={30}
         onFinish={() => alert('Finished')}
         digitStyle={{backgroundColor: '#FFF'}}
@@ -83,7 +83,7 @@ render() {
     return (
       <CountDown
         size={30}
-        until={1000}
+        until={(new Date()).getTime() + (10 * 1000)}
         onFinish={() => alert('Finished')}
         digitStyle={{backgroundColor: '#FFF', borderWidth: 2, borderColor: '#1CC625'}}
         digitTxtStyle={{color: '#1CC625'}}
