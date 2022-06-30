@@ -90,11 +90,11 @@ function BackgroundTimeout(props) {
     };
 
     setTick(updateTimer);
-    AppState.addEventListener('change', handleAppStateChange);
+    const listener = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
       clearTick();
-      AppState.removeEventListener('change', handleAppStateChange);
+      listener.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seconds, useBackgroundTimer]);
